@@ -80,6 +80,8 @@ server.use('/users', isAuth(), usersRouter.router);
 server.use('/auth', authRouter.router);
 server.use('/cart', isAuth(), cartRouter.router);
 server.use('/orders', isAuth(), ordersRouter.router);
+//this line we add to make react router work in case of other routes does not match
+server.get('*', (req, res) => res.sendFile(path.resolve('build', 'index.html')));
 
 // Passport Strategies
 passport.use(
@@ -149,7 +151,7 @@ passport.deserializeUser(function (user, cb) {
 // This is your test secret API key.
 const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY)
 server.post("/create-payment-intent", async (req, res) => {
-    const { totalAmount } = req.body;
+    const { totalAmount, orderId } = req.body;
     // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmount * 100, //for decimal compensation
@@ -157,6 +159,9 @@ server.post("/create-payment-intent", async (req, res) => {
         automatic_payment_methods: {
             enabled: true,
         },
+        metadata: {
+            orderId
+        }
     });
     res.send({
         clientSecret: paymentIntent.client_secret,
